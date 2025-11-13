@@ -1,13 +1,28 @@
 /**
  * Live Leaderboard Sidebar
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuizStore } from '../state/store';
+import { subscribeToLeaderboard, realtimeEnabled } from '../services/quizService';
+import { RealtimeNotice } from '../services/supabaseClient';
 
 // PUBLIC_INTERFACE
 export function LeaderboardSidebar() {
   /** Renders the live leaderboard based on store state. */
-  const { state } = useQuizStore();
+  const { state, actions } = useQuizStore();
+
+  useEffect(() => {
+    if (!state.session.id) return;
+    const unsubscribe = subscribeToLeaderboard(state.session.id, (leaderboard) => {
+      if (Array.isArray(leaderboard)) {
+        actions.setLeaderboard(leaderboard);
+      }
+    });
+    return () => {
+      unsubscribe && unsubscribe();
+    };
+  }, [state.session.id, actions]);
+
   const top = [...state.leaderboard]
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
@@ -15,6 +30,7 @@ export function LeaderboardSidebar() {
   return (
     <div>
       <div className="section-title">Leaderboard</div>
+      {!realtimeEnabled() && <RealtimeNotice />}
       {!top.length ? (
         <div className="empty">No scores yet. Participate to climb the board!</div>
       ) : (

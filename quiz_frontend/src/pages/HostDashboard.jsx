@@ -2,7 +2,15 @@
  * Host Dashboard: manage session, push questions.
  */
 import React, { useState } from 'react';
-import { createSession, startSession, stopSession, pushQuestion } from '../services/quizService';
+import {
+  createSession,
+  startSession,
+  stopSession,
+  pushQuestion,
+  publishLeaderboard,
+  realtimeEnabled,
+} from '../services/quizService';
+import { RealtimeNotice } from '../services/supabaseClient';
 import { useQuizStore } from '../state/store';
 
 // PUBLIC_INTERFACE
@@ -43,6 +51,10 @@ export default function HostDashboard() {
     try {
       await stopSession(state.session.id);
       actions.setSession({ status: 'stopped' });
+      // Optionally publish a final leaderboard snapshot
+      if (state.leaderboard?.length) {
+        publishLeaderboard(state.session.id, state.leaderboard).catch(() => {});
+      }
     } finally {
       setBusy(false);
     }
@@ -62,11 +74,14 @@ export default function HostDashboard() {
       actions.pushQuestion(q);
       actions.incrementIndex();
       // simulate minimal leaderboard change
-      actions.setLeaderboard([
+      const newBoard = [
         { name: 'Ava', score: Math.floor(Math.random() * 40) + 10 },
         { name: 'Noah', score: Math.floor(Math.random() * 40) + 10 },
         { name: 'Liam', score: Math.floor(Math.random() * 40) + 10 },
-      ]);
+      ];
+      actions.setLeaderboard(newBoard);
+      // Broadcast leaderboard for participants
+      publishLeaderboard(state.session.id, newBoard).catch(() => {});
       setQuestion('');
       setChoices(['', '', '', '']);
     } finally {
@@ -77,6 +92,7 @@ export default function HostDashboard() {
   return (
     <div className="card">
       <div className="section-title">Host Dashboard</div>
+      {!realtimeEnabled() && <RealtimeNotice />}
       <div className="row">
         <div className="card">
           <label className="label" htmlFor="title">Session Title</label>

@@ -22,6 +22,8 @@ export default function Landing() {
     try {
       const res = await joinSession({ code: code.trim().toUpperCase(), name: name.trim() });
       actions.setParticipant({ id: res.participantId, name: res.name, joinedCode: res.code });
+      // For placeholder flows, treat the code as session id to scope realtime channel
+      actions.setSession({ id: res.code, code: res.code, title: 'Live Quiz', totalQuestions: 5 });
       navigate('/join');
     } finally {
       setLoading(false);

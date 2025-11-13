@@ -1,8 +1,9 @@
 /**
  * Participant View: shows current question and allows answer submission.
  */
-import React, { useState } from 'react';
-import { submitAnswer } from '../services/quizService';
+import React, { useEffect, useState } from 'react';
+import { submitAnswer, subscribeToQuestion, realtimeEnabled } from '../services/quizService';
+import { RealtimeNotice } from '../services/supabaseClient';
 import { useQuizStore } from '../state/store';
 
 // PUBLIC_INTERFACE
@@ -11,6 +12,18 @@ export default function Participant() {
   const { state, actions } = useQuizStore();
   const [selected, setSelected] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    // Subscribe to question updates for joined session
+    if (!state.session.id) return;
+    const unsubscribe = subscribeToQuestion(state.session.id, (question) => {
+      actions.pushQuestion(question);
+      setSelected(null);
+    });
+    return () => {
+      unsubscribe && unsubscribe();
+    };
+  }, [state.session.id, actions]);
 
   const hasQuestion = !!state.session.currentQuestion;
 
@@ -47,6 +60,7 @@ export default function Participant() {
   return (
     <div className="card">
       <div className="section-title">Participant</div>
+      {!realtimeEnabled() && <RealtimeNotice />}
       {!state.participant.id ? (
         <div className="empty">You have not joined a session from the Landing page.</div>
       ) : !hasQuestion ? (

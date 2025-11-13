@@ -8,6 +8,7 @@ import Participant from './pages/Participant';
 import { LeaderboardSidebar } from './components/LeaderboardSidebar';
 import { SessionProgress } from './components/SessionProgress';
 import { useQuizStore, QuizProvider } from './state/store';
+import { RealtimeNotice } from './services/supabaseClient';
 
 /**
  * AppShell renders the global layout containing header, main content with optional sidebar,
@@ -76,6 +77,7 @@ function AppShell() {
 
       <footer className="footer" aria-label="Session Progress">
         <SessionProgress />
+        <RealtimeNotice />
       </footer>
     </div>
   );
